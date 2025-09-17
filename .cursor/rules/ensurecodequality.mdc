@@ -1,0 +1,153 @@
+---
+# Generic Cursor rule: Enforce best practices, strict TS, tests, docs, and "vibe coding" rules
+description: >
+  Generic enforcement rule for any change implemented via Cursor.
+  Requires code to follow best practices: modularity, scalability, maintainability, and security.
+  Generated code must use TypeScript in strict mode (where applicable), include inline comments,
+  produce Jest tests that cover specified acceptance criteria, and add a Change/Feature document
+  under the `doc/` folder. Enforces quality gates (lint, pre-commit hooks, CI tests) and embeds
+  "vibe coding" golden rules into generated documentation and PR templates.
+
+globs:
+  - "src/**/*.ts"
+  - "src/**/*.tsx"
+  - "lib/**/*.ts"
+  - "lib/**/*.tsx"
+  - "packages/**/src/**/*.ts"
+  - "packages/**/src/**/*.tsx"
+  - "docs/**"
+  - "doc/**"
+  - "tests/**"
+alwaysApply: true
+
+policy:
+  code_language:
+    type: "typescript"
+    strictMode: true     # enforce --strict / "strict": true in tsconfig when TS files are created/edited
+    target: "ES2020"
+    allow_js: false      # prefer TS; if JS is used, require justification in change doc
+
+  style_guides:
+    - "adhere to repo's ESLint and Prettier rules"
+    - "use project design tokens for UI components (if applicable)"
+    - "follow existing naming and folder conventions"
+
+  architecture_requirements:
+    - "modular: break logic into focused modules and small components"
+    - "scalable: avoid hard-coded limits; use configurable constants"
+    - "maintainable: small files, clear public APIs, documented exports"
+    - "secure: do not expose secrets in client; validate external inputs"
+
+  testing:
+    generate_tests: true
+    framework: "jest"
+    test_scope: "unit + integration where applicable"
+    test_files_location: "tests/unit"    # default; generator may mirror source structure
+    test_requirements:
+      - "Every acceptance criteria provided with the change MUST map to at least one Jest test."
+      - "Network interactions must be mocked/stubbed."
+      - "Edge cases (errors, nulls, cache expiry) must have tests."
+      - "Coverage should target logic critical to acceptance criteria."
+
+  documentation:
+    generate_change_doc: true
+    doc_root: "doc"
+    doc_template_fields:
+      - "Title"
+      - "Overview"
+      - "Scope (In-scope / Out-of-scope)"
+      - "Acceptance Criteria (GIVEN/WHEN/THEN)"
+      - "Implementation Notes"
+      - "Public API (props / params / return types)"
+      - "Expected external data shapes"
+      - "Caching, rate-limit and performance rationale"
+      - "Security considerations"
+      - "Testing summary and how to run tests"
+      - "Deployment notes and rollback strategy"
+      - "Vibe Coding Golden Rules (see below)"
+    doc_filename_pattern: "doc/feature-<short-kebab-title>.md"
+
+  comments_and_annotations:
+    inline_comments: true
+    comment_expectation: "Add clear comments for non-obvious logic, contracts, and security-sensitive decisions."
+
+  abstraction_and_testability:
+    - "Abstract network and environment access behind small wrappers/interfaces to ease mocking."
+    - "Export small pure functions where possible for easier unit testing."
+    - "Avoid large inline anonymous functions; prefer named, testable functions."
+
+  caching_and_performance:
+    default_cache_ttl_ms: 300000
+    cache_strategy: "in-memory per-page by default; recommend configurable strategy for scale"
+    performance_notes: "Document tradeoffs in change doc."
+
+  error_handling:
+    - "Fail gracefully in UI: provide safe fallbacks and do not crash the host page."
+    - "Record errors to telemetry (Sentry/Datadog) — add instrumentation hooks in implementation notes."
+
+  quality_gates:
+    pre_commit_hooks:
+      - "husky: pre-commit -> lint-staged -> eslint --fix + prettier"
+      - "pre-push -> npm test -- (run jest)"
+    ci_checks:
+      - "type-check (tsc --noEmit --strict)"
+      - "lint (eslint)"
+      - "unit tests (jest)"
+      - "security scan (dependabot/Snyk/Codacy or equivalent)"
+    enforcement: "Fail PR merge if any gate fails."
+
+  pr_and_commit:
+    suggested_pr_template: |
+      Title: <short, descriptive title>
+      Description:
+        - Overview: <One-liner summary>
+        - Scope: <In-scope / Out-of-scope>
+        - Acceptance Criteria: (copy GIVEN/WHEN/THEN)
+        - Testing: list tests added and how to run
+        - Docs: path to generated change doc
+      Checklist:
+        - [ ] Type-check passes (strict)
+        - [ ] Unit tests added and passing
+        - [ ] Lint & formatting applied
+        - [ ] No secrets in client code
+        - [ ] Change doc created and reviewed
+        - [ ] At least one reviewer assigned
+
+  output_artifacts:
+    - "Source files (TypeScript, strict mode)"
+    - "Unit & integration tests (jest) located under tests/unit or mirrored __tests__ folders"
+    - "Change/Feature doc under doc/ (feature-<title>.md)"
+    - "PR description template populated"
+    - "Optional: changelog entry (if project uses changelog)"
+
+  security_requirements:
+    - "Never commit API keys, secrets, or credentials."
+    - "Use environment variables or secure backends for secrets; document required env vars in change doc."
+    - "Validate and sanitize external inputs."
+    - "Avoid exposing internal endpoints or privileged operations to client code."
+
+  additional_requirements:
+    - "Favor composition over inheritance and extract reusable utilities."
+    - "Strive for clear, idiomatic TypeScript with explicit types and no `any`."
+    - "Prefer pure functions for business logic with side-effects isolated."
+
+  vibe_coding_golden_rules:
+    - "Single Responsibility Principle: one reason to change per module."
+    - "Separation of Concerns: UI, data, and business logic separated."
+    - "DRY: extract and reuse common utilities."
+    - "KISS: keep solutions simple and readable."
+    - "YAGNI: implement only what's required by acceptance criteria."
+    - "Test Early & Often: write tests alongside code."
+    - "Fail Fast & Safe: validate inputs and provide safe fallbacks."
+    - "Secure by Default: do not leak secrets; validate external data."
+    - "Document Intent: explain *why* in docs, not only *how*."
+    - "Code Review Culture: require peer review and passing CI."
+
+  generator_behavior:
+    - "When creating/modifying code: produce strict TypeScript files and include inline comments where helpful."
+    - "When acceptance criteria are present: auto-generate Jest test files that map criteria to tests and mock external dependencies."
+    - "Create a change doc from the doc_template_fields and save to doc/ with a kebab-case filename derived from the title."
+    - "If modifications could expose secrets or sensitive endpoints, prompt to create a secure backend proxy and document the security rationale."
+    - "If repository uses JS only or lacks TS config, add a note in the change doc recommending migration and include a minimal tsconfig suggestion."
+
+...
